@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Summarization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        label {
+            font-size: 18px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #output {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>路由聚合</h2>
+        <label for="ipInput">输入IP地址 (英文逗号隔开,不允许有多余的空格):</label>
+        <input type="text" id="ipInput" />
+        <button onclick="summarizeAndDisplay()">点击聚合</button>
+        <div id="output"></div>
+    </div>
+
+    <script>
+        function ipToIntArray(ip) {
+            return ip.split(".").map(Number);
+        }
+
+        function summarizeRoutes(ips) {
+            // Assume all IP addresses have the same subnet mask and they are contiguous
+
+            // Convert IP addresses to binary
+            const binaryIps = ips.map(ip => ipToIntArray(ip));
+
+            // Find the common prefix of all IP addresses
+            let commonPrefixLength = 32;
+            for (let i = 0; i < 32; i++) {
+                const bit = (binaryIps[0][Math.floor(i / 8)] >> (7 - i % 8)) & 1;
+                for (const binaryIp of binaryIps) {
+                    const currentBit = (binaryIp[Math.floor(i / 8)] >> (7 - i % 8)) & 1;
+                    if (currentBit !== bit) {
+                        commonPrefixLength = i;
+                        break;
+                    }
+                }
+                if (commonPrefixLength !== 32) {
+                    break;
+                }
+            }
+
+            // Build the summarized route
+            const summarizedRoute = [...binaryIps[0]];
+            for (let i = commonPrefixLength; i < 32; i++) {
+                summarizedRoute[Math.floor(i / 8)] &= ~(1 << (7 - i % 8));
+            }
+
+            // Convert the summarized route to string format
+            const summarizedIp = summarizedRoute.map(String).join(".");
+            return summarizedIp + "/" + commonPrefixLength;
+        }
+
+        function summarizeAndDisplay() {
+            const ipInput = document.getElementById("ipInput").value;
+            const ipAddresses = ipInput.split(",").map(str => str.trim());
+            const summarizedRoute = summarizeRoutes(ipAddresses);
+            document.getElementById("output").innerText = "Summarized route: " + summarizedRoute;
+        }
+    </script>
+</body>
+</html>
+
